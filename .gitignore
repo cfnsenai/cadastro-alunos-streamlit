@@ -1,0 +1,24 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environment
+.venv/
+env/
+venv/
+
+# Secrets, configs
+.secrets/
+.secrets.toml
+.streamlit/secrets.toml
+usuarios.db
+logs_alunos.log
+
+# VSCode / IDE
+.vscode/
+.idea/
+*.swp
+
+# Jupyter notebooks checkpoints
+.ipynb_checkpoints
