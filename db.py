@@ -57,8 +57,9 @@ def atualizar_aluno(id, nome, idade, curso, email):
 
 
 def excluir_aluno(id):
-    with engine.connect() as conn:
+    with engine.begin() as conn:  # <- Isso garante COMMIT automático
         conn.execute(text("DELETE FROM alunos WHERE id = :id"), {"id": id})
+
 
 def exportar_csv():
     df = listar_alunos()

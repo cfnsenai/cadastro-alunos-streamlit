@@ -73,6 +73,20 @@ else:
 
     if aba == "Cadastrar":
         st.subheader("➕ Novo Aluno")
+
+        # Inicializa os campos se ainda não existem
+        for campo in ["nome", "idade", "curso", "email"]:
+            if campo not in st.session_state:
+                st.session_state[campo] = ""
+
+        # Se a flag de limpeza estiver ativada, limpa os campos
+        if st.session_state.get("limpar_campos"):
+            st.session_state["nome"] = ""
+            st.session_state["idade"] = ""
+            st.session_state["curso"] = ""
+            st.session_state["email"] = ""
+            st.session_state["limpar_campos"] = False
+
         with st.form(key="form_cadastro"):
             nome = st.text_input("Nome", key="nome")
             idade = st.text_input("Idade", key="idade")
@@ -91,7 +105,12 @@ else:
                     db.inserir_aluno(nome.strip(), int(idade), curso.strip(), email.strip())
                     logging.info(f"Aluno cadastrado: {nome}, {idade}, {curso}, {email}")
                     st.success(f"Aluno '{nome}' cadastrado com sucesso!")
-                    st.experimental_rerun()
+
+                    # Marca os campos para limpeza na próxima renderização
+                    st.session_state["limpar_campos"] = True
+                    st.rerun()
+
+
 
     elif aba == "Visualizar":
         st.subheader("📋 Lista de Alunos")
@@ -144,7 +163,7 @@ else:
                 db.excluir_aluno(id_aluno)
                 logging.info(f"Aluno excluído (ID: {id_aluno})")
                 st.success("Aluno excluído com sucesso!")
-                st.experimental_rerun()
+                st.rerun()
 
     elif aba == "Exportar CSV":
         st.subheader("📤 Exportar Dados para CSV")
