@@ -12,34 +12,62 @@ engine = create_engine(DATABASE_URL)
 # ----- Funções CRUD -----
 
 def conectar():
-    with engine.connect() as conn:
+    with engine.begin() as conn:
         conn.execute(text("""
             CREATE TABLE IF NOT EXISTS alunos (
                 id SERIAL PRIMARY KEY,
                 nome TEXT NOT NULL,
                 idade INTEGER,
                 curso TEXT,
-                email TEXT
+                email TEXT,
+                data_nascimento DATE,
+                data_matricula DATE,
+                genero TEXT,
+                endereco TEXT,
+                numero TEXT,
+                cep TEXT,
+                nome_mae TEXT,
+                nome_pai TEXT,
+                data_ocorrencia DATE,
+                descricao_ocorrencia TEXT
             )
         """))
 
-
-def inserir_aluno(nome, idade, curso, email):
+def inserir_aluno(nome, idade, curso, email, data_nascimento, data_matricula,
+                  genero, endereco, numero, cep, nome_mae, nome_pai,
+                  data_ocorrencia, descricao_ocorrencia):
     with engine.begin() as conn:
         conn.execute(text("""
-            INSERT INTO alunos (nome, idade, curso, email)
-            VALUES (:nome, :idade, :curso, :email)
+            INSERT INTO alunos (
+                nome, idade, curso, email, data_nascimento, data_matricula,
+                genero, endereco, numero, cep, nome_mae, nome_pai,
+                data_ocorrencia, descricao_ocorrencia
+            )
+            VALUES (
+                :nome, :idade, :curso, :email, :data_nascimento, :data_matricula,
+                :genero, :endereco, :numero, :cep, :nome_mae, :nome_pai,
+                :data_ocorrencia, :descricao_ocorrencia
+            )
         """), {
             "nome": nome,
             "idade": idade,
             "curso": curso,
-            "email": email
+            "email": email,
+            "data_nascimento": data_nascimento,
+            "data_matricula": data_matricula,
+            "genero": genero,
+            "endereco": endereco,
+            "numero": numero,
+            "cep": cep,
+            "nome_mae": nome_mae,
+            "nome_pai": nome_pai,
+            "data_ocorrencia": data_ocorrencia,
+            "descricao_ocorrencia": descricao_ocorrencia
         })
-
 
 def listar_alunos():
     with engine.connect() as conn:
-        df = pd.read_sql("SELECT * FROM alunos", conn)
+        df = pd.read_sql("SELECT * FROM alunos ORDER BY id", conn)
     return df
 
 def buscar_aluno_por_id(id):
@@ -47,19 +75,48 @@ def buscar_aluno_por_id(id):
         df = pd.read_sql("SELECT * FROM alunos WHERE id = %s", conn, params=(id,))
     return df
 
-def atualizar_aluno(id, nome, idade, curso, email):
-    with engine.connect() as conn:
+def atualizar_aluno(id, nome, idade, curso, email, data_nascimento, data_matricula,
+                    genero, endereco, numero, cep, nome_mae, nome_pai,
+                    data_ocorrencia, descricao_ocorrencia):
+    with engine.begin() as conn:
         conn.execute(text("""
-            UPDATE alunos
-            SET nome = :nome, idade = :idade, curso = :curso, email = :email
+            UPDATE alunos SET
+                nome = :nome,
+                idade = :idade,
+                curso = :curso,
+                email = :email,
+                data_nascimento = :data_nascimento,
+                data_matricula = :data_matricula,
+                genero = :genero,
+                endereco = :endereco,
+                numero = :numero,
+                cep = :cep,
+                nome_mae = :nome_mae,
+                nome_pai = :nome_pai,
+                data_ocorrencia = :data_ocorrencia,
+                descricao_ocorrencia = :descricao_ocorrencia
             WHERE id = :id
-        """), {"id": id, "nome": nome, "idade": idade, "curso": curso, "email": email})
-
+        """), {
+            "id": id,
+            "nome": nome,
+            "idade": idade,
+            "curso": curso,
+            "email": email,
+            "data_nascimento": data_nascimento,
+            "data_matricula": data_matricula,
+            "genero": genero,
+            "endereco": endereco,
+            "numero": numero,
+            "cep": cep,
+            "nome_mae": nome_mae,
+            "nome_pai": nome_pai,
+            "data_ocorrencia": data_ocorrencia,
+            "descricao_ocorrencia": descricao_ocorrencia
+        })
 
 def excluir_aluno(id):
-    with engine.begin() as conn:  # <- Isso garante COMMIT automático
+    with engine.begin() as conn:
         conn.execute(text("DELETE FROM alunos WHERE id = :id"), {"id": id})
-
 
 def exportar_csv():
     df = listar_alunos()

@@ -5,6 +5,7 @@ import plotly.express as px
 import re
 import logging
 import auth
+from datetime import date
 
 # Inicializa banco de autenticação
 auth.init_db()
@@ -48,7 +49,6 @@ if not st.session_state.autenticado:
             else:
                 st.error("Usuário não encontrado, senha incorreta ou acesso não autorizado. Tente novamente ou cadastre-se.")
 
-
     elif aba == "Cadastro":
         nome = st.text_input("Nome")
         email = st.text_input("E-mail")
@@ -71,44 +71,59 @@ else:
     st.title("📚 Sistema de Cadastro de Alunos")
     aba = st.sidebar.radio("Navegação", ["Cadastrar", "Visualizar", "Atualizar", "Excluir", "Exportar CSV"])
 
+
     if aba == "Cadastrar":
         st.subheader("➕ Novo Aluno")
 
-        # Inicializa os campos se ainda não existem
-        for campo in ["nome", "idade", "curso", "email"]:
-            if campo not in st.session_state:
-                st.session_state[campo] = ""
+        # Gera chave única do formulário a cada sucesso
+        if "form_reset" not in st.session_state:
+            st.session_state.form_reset = 0
 
-        # Se a flag de limpeza estiver ativada, limpa os campos
-        if st.session_state.get("limpar_campos"):
-            st.session_state["nome"] = ""
-            st.session_state["idade"] = ""
-            st.session_state["curso"] = ""
-            st.session_state["email"] = ""
-            st.session_state["limpar_campos"] = False
+        if st.session_state.get("cadastro_ok", False):
+            st.session_state.cadastro_ok = False
+            st.session_state.form_reset += 1
 
-        with st.form(key="form_cadastro"):
-            nome = st.text_input("Nome", key="nome")
-            idade = st.text_input("Idade", key="idade")
-            curso = st.text_input("Curso", key="curso")
-            email = st.text_input("E-mail", key="email")
+        with st.form(key=f"form_cadastro_{st.session_state.form_reset}"):
+            nome = st.text_input("Nome")
+            idade = st.text_input("Idade")
+            curso = st.text_input("Curso")
+            email = st.text_input("E-mail")
+            data_nascimento = st.date_input("Data de Nascimento", value=date.today())
+            data_matricula = st.date_input("Dados de Matrícula", value=date.today())
+            genero = st.selectbox("Gênero", ["Masculino", "Feminino", "Outro"])
+            endereco = st.text_input("Endereço")
+            numero = st.text_input("Número")
+            cep = st.text_input("CEP")
+            nome_mae = st.text_input("Nome da Mãe")
+            nome_pai = st.text_input("Nome do Pai")
+            data_ocorrencia = st.date_input("Dados da Ocorrência", value=date.today())
+            descricao_ocorrencia = st.text_area("Descrição da Ocorrência")
+
             submitted = st.form_submit_button("Cadastrar")
 
             if submitted:
-                if not nome or not idade or not curso or not email:
-                    st.warning("Preencha todos os campos.")
-                elif not idade.isdigit() or int(idade) <= 0:
-                    st.warning("Idade inválida.")
-                elif not validar_email(email):
-                    st.warning("E-mail inválido.")
+                if not nome or not idade.isdigit():
+                    st.warning("Preencha corretamente os campos obrigatórios.")
                 else:
-                    db.inserir_aluno(nome.strip(), int(idade), curso.strip(), email.strip())
-                    logging.info(f"Aluno cadastrado: {nome}, {idade}, {curso}, {email}")
+                    db.inserir_aluno(
+                        nome.strip(),
+                        int(idade),
+                        curso.strip(),
+                        email.strip(),
+                        data_nascimento,
+                        data_matricula,
+                        genero,
+                        endereco,
+                        numero,
+                        cep,
+                        nome_mae,
+                        nome_pai,
+                        data_ocorrencia,
+                        descricao_ocorrencia.strip()
+                    )
                     st.success(f"Aluno '{nome}' cadastrado com sucesso!")
+                    st.session_state.cadastro_ok = True
 
-                    # Marca os campos para limpeza na próxima renderização
-                    st.session_state["limpar_campos"] = True
-                    st.rerun()
 
 
 
@@ -134,20 +149,32 @@ else:
             dados = db.buscar_aluno_por_id(id_aluno)
 
             if not dados.empty:
-                nome = st.text_input("Nome", dados["nome"].iloc[0])
-                idade = st.text_input("Idade", str(dados["idade"].iloc[0]))
-                curso = st.text_input("Curso", dados["curso"].iloc[0])
-                email = st.text_input("E-mail", dados["email"].iloc[0])
+                with st.form(key="form_atualizar"):
+                    nome = st.text_input("Nome", dados["nome"].iloc[0])
+                    idade = st.text_input("Idade", str(dados["idade"].iloc[0]))
+                    curso = st.text_input("Curso", dados["curso"].iloc[0])
+                    email = st.text_input("E-mail", dados["email"].iloc[0])
+                    data_nascimento = st.date_input("Data de Nascimento", value=pd.to_datetime(dados["data_nascimento"].iloc[0]))
+                    data_matricula = st.date_input("Data de Matrícula", value=pd.to_datetime(dados["data_matricula"].iloc[0]))
+                    genero = st.selectbox("Gênero", ["Masculino", "Feminino", "Outro"], index=["Masculino", "Feminino", "Outro"].index(dados["genero"].iloc[0]))
+                    endereco = st.text_input("Endereço", dados["endereco"].iloc[0])
+                    numero = st.text_input("Número", dados["numero"].iloc[0])
+                    cep = st.text_input("CEP", dados["cep"].iloc[0])
+                    nome_mae = st.text_input("Nome da Mãe", dados["nome_mae"].iloc[0])
+                    nome_pai = st.text_input("Nome do Pai", dados["nome_pai"].iloc[0])
+                    data_ocorrencia = st.date_input("Data da Ocorrência", value=pd.to_datetime(dados["data_ocorrencia"].iloc[0]))
+                    descricao_ocorrencia = st.text_area("Descrição da Ocorrência", dados["descricao_ocorrencia"].iloc[0])
 
-                if st.button("Atualizar", key="atualizar"):
-                    if not nome or not idade or not curso or not email or not idade.isdigit():
-                        st.warning("Preencha os campos corretamente.")
-                    elif not validar_email(email):
-                        st.warning("E-mail inválido.")
-                    else:
-                        db.atualizar_aluno(id_aluno, nome.strip(), int(idade), curso.strip(), email.strip())
+                    if st.form_submit_button("Atualizar"):
+                        db.atualizar_aluno(
+                            id_aluno, nome, int(idade), curso, email,
+                            data_nascimento, data_matricula, genero,
+                            endereco, numero, cep, nome_mae, nome_pai,
+                            data_ocorrencia, descricao_ocorrencia
+                        )
                         logging.info(f"Aluno atualizado (ID: {id_aluno}): {nome}, {idade}, {curso}, {email}")
                         st.success("Aluno atualizado com sucesso!")
+                        st.rerun()
 
     elif aba == "Excluir":
         st.subheader("🗑️ Excluir Aluno")
